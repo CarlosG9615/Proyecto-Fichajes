@@ -27,7 +27,7 @@ ROOT_ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(ROOT_ENV_FILE)
 
 # Configuración
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8454835665:AAE2J3z7KRprNnEq5Bxtce4bjyz-ZJrZowc")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 DATABASE_NAME = os.getenv("DATABASE_NAME", "CVKE")
 
@@ -384,8 +384,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     """Función principal del bot"""
+    if not TELEGRAM_TOKEN:
+        raise RuntimeError("TELEGRAM_TOKEN no está configurado en el archivo .env")
+
     print("🤖 Iniciando bot de Telegram para Sistema de Fichajes...")
-    print(f"📱 Token: {TELEGRAM_TOKEN[:20]}...")
+    print("📱 Token: configurado por entorno")
     print(f"🗄️ MongoDB: {MONGO_URL}")
     print(f"📊 Base de datos: {DATABASE_NAME}")
     
