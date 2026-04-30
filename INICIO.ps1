@@ -54,7 +54,7 @@ function Start-Frontend {
         throw "No se encontró directorio streamlit_app"
     }
 
-    $command = "Set-Location -Path '$streamlitPath'; & '$pythonExe' -m streamlit run app.py --server.baseUrlPath Portal_RRHH"
+    $command = "Set-Location -Path '$streamlitPath'; & '$pythonExe' -m streamlit run app.py"
     Start-Process powershell -ArgumentList @("-NoExit", "-ExecutionPolicy", "Bypass", "-Command", $command) | Out-Null
     Write-Step "Frontend Streamlit iniciado"
 }
