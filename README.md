@@ -69,6 +69,8 @@ Variables que debes completar en `.env` antes de usar el sistema:
 - `DATABASE_NAME`
 - `SECRET_KEY`
 - `TELEGRAM_TOKEN` (si se usara bot)
+- `ALGORITHM` (algoritmo de encriptación)
+- `ACCESS_TOKEN_EXPIRE_MINUTES`
 
 ## Que archivos compartir (sin datos sensibles)
 

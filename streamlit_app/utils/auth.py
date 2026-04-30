@@ -5,11 +5,13 @@ import streamlit as st
 import hashlib
 import hmac
 import re
+import secrets
 from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
-from utils.database import get_usuarios_collection
+from streamlit_javascript import st_javascript
+from utils.database import get_usuarios_collection, get_sync_database
 
 # Contexto de encriptación (mismo que el backend)
 pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
@@ -17,6 +19,45 @@ pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto
 def hash_password(password: str) -> str:
     """Hashea una contraseña usando bcrypt"""
     return pwd_context.hash(password)
+
+
+# ---------------------------------------------------------------------------
+# Gestión de sesiones persistentes (MongoDB + localStorage)
+# ---------------------------------------------------------------------------
+
+def _crear_sesion_db(user_id: str) -> str:
+    """Crea una sesión en MongoDB y retorna el token."""
+    token = secrets.token_urlsafe(32)
+    db = get_sync_database()
+    db.sessions.insert_one({
+        "token": token,
+        "user_id": user_id,
+        "created_at": datetime.now(),
+        "expires_at": datetime.now() + timedelta(hours=24),
+    })
+    return token
+
+
+def _recuperar_sesion_db(token: str):
+    """Recupera el usuario asociado a un token de sesión válido."""
+    db = get_sync_database()
+    session = db.sessions.find_one({
+        "token": token,
+        "expires_at": {"$gt": datetime.now()},
+    })
+    if not session:
+        return None
+    usuarios_col = get_usuarios_collection()
+    try:
+        return usuarios_col.find_one({"_id": ObjectId(session["user_id"]), "activo": True})
+    except Exception:
+        return None
+
+
+def _eliminar_sesion_db(token: str) -> None:
+    """Elimina la sesión del servidor."""
+    db = get_sync_database()
+    db.sessions.delete_one({"token": token})
 
 
 def password_cumple_politica(password: str) -> tuple[bool, list[str]]:
@@ -128,29 +169,62 @@ def verificar_rol_admin(usuario: dict) -> bool:
     return usuario.get("rol") == "admin"
 
 def inicializar_sesion():
-    """Inicializa las variables de sesión"""
-    if 'logged_in' not in st.session_state:
-        st.session_state.logged_in = False
-    if 'usuario' not in st.session_state:
-        st.session_state.usuario = None
-    if 'rol' not in st.session_state:
-        st.session_state.rol = None
-    if 'user_id' not in st.session_state:
-        st.session_state.user_id = None
+    """Inicializa las variables de sesión y restaura desde localStorage si hay token guardado."""
+    defaults = {
+        'logged_in': False,
+        'usuario': None,
+        'rol': None,
+        'user_id': None,
+        'session_token': None,
+        '_token_to_save': None,
+    }
+    for key, val in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = val
+
+    # Primer render tras login: guardar el token en localStorage.
+    # Se hace aqui (y no en login_usuario) para evitar la carrera con st.rerun().
+    pending = st.session_state.get('_token_to_save')
+    if pending:
+        st.session_state._token_to_save = None
+        st_javascript(f"localStorage.setItem('fichajes_session_token', '{pending}')")
+        return  # ya estamos logados, la pagina renderizara correctamente
+
+    # Restaurar sesion desde localStorage en cada recarga de pagina.
+    if not st.session_state.logged_in:
+        token = st_javascript("localStorage.getItem('fichajes_session_token')")
+        if isinstance(token, str) and token:
+            usuario = _recuperar_sesion_db(token)
+            if usuario:
+                st.session_state.logged_in = True
+                st.session_state.usuario = usuario
+                st.session_state.rol = usuario.get("rol", "user")
+                st.session_state.user_id = str(usuario.get("_id"))
+                st.session_state.session_token = token
+                st.rerun()  # forzar re-render con sesion restaurada
 
 def login_usuario(usuario: dict):
-    """Inicia sesión de un usuario"""
+    """Inicia sesión de un usuario. El token se guarda en localStorage en el siguiente render."""
+    token = _crear_sesion_db(str(usuario.get("_id")))
     st.session_state.logged_in = True
     st.session_state.usuario = usuario
     st.session_state.rol = usuario.get("rol", "user")
     st.session_state.user_id = str(usuario.get("_id"))
+    st.session_state.session_token = token
+    st.session_state._token_to_save = token  # inicializar_sesion lo guardara en localStorage
 
 def logout_usuario():
-    """Cierra sesión del usuario"""
+    """Cierra sesión del usuario y elimina el token de localStorage."""
+    token = st.session_state.get('session_token')
+    if token:
+        _eliminar_sesion_db(token)
+    st_javascript("localStorage.removeItem('fichajes_session_token')")
     st.session_state.logged_in = False
     st.session_state.usuario = None
     st.session_state.rol = None
     st.session_state.user_id = None
+    st.session_state.session_token = None
+    st.session_state._token_to_save = None
 
 def requiere_autenticacion():
     """Decorator o función que requiere autenticación"""

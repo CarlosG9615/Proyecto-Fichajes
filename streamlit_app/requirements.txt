@@ -5,3 +5,4 @@ pandas>=2.1.4
 passlib>=1.7.4
 bcrypt==4.0.1
 python-dotenv>=1.0.0
+streamlit-javascript>=0.0.16

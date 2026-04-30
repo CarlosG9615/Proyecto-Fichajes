@@ -25,10 +25,10 @@ st.set_page_config(
 )
 
 # Configuración desde .env
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-DATABASE_NAME = os.getenv("DATABASE_NAME", "CVKE")
-USUARIOS_COLLECTION = os.getenv("USUARIOS_COLLECTION", "usuarios")
-FICHAJES_COLLECTION = os.getenv("FICHAJES_COLLECTION", "fichajes")
+MONGO_URI = os.getenv("MONGO_URI")
+DATABASE_NAME = os.getenv("DATABASE_NAME")
+USUARIOS_COLLECTION = os.getenv("USUARIOS_COLLECTION")
+FICHAJES_COLLECTION = os.getenv("FICHAJES_COLLECTION")
 
 # Contexto para bcrypt (consistente con el backend)
 pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
