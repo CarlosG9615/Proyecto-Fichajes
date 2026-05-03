@@ -23,12 +23,12 @@ function Get-PythonExecutable {
 function Start-TelegramBot {
     param([string]$pythonExe)
 
-    $telegramPath = Join-Path $PSScriptRoot "telegram_bot"
+    $telegramPath = Join-Path $PSScriptRoot "src\telegram_bot"
     if (-not (Test-Path $telegramPath)) {
-        throw "No se encontró directorio telegram_bot"
+        throw "No se encontró directorio src\telegram_bot"
     }
 
-    $command = "Set-Location -Path '$telegramPath'; & '$pythonExe' bot.py"
+    $command = "Set-Location -Path '$PSScriptRoot'; & '$pythonExe' -m telegram_bot.bot"
     Start-Process powershell -ArgumentList @("-NoExit", "-ExecutionPolicy", "Bypass", "-Command", $command) | Out-Null
     Write-Step "Bot de Telegram iniciado"
 }
@@ -36,12 +36,12 @@ function Start-TelegramBot {
 function Start-Backend {
     param([string]$pythonExe)
 
-    $backendPath = Join-Path $PSScriptRoot "fichajes_backpy"
+    $backendPath = Join-Path $PSScriptRoot "src\fichajes_backpy"
     if (-not (Test-Path $backendPath)) {
-        throw "No se encontró directorio fichajes_backpy"
+        throw "No se encontró directorio src\fichajes_backpy"
     }
 
-    $command = "Set-Location -Path '$backendPath'; & '$pythonExe' -m uvicorn main:app --reload --port 8000"
+    $command = "Set-Location -Path '$PSScriptRoot'; & '$pythonExe' -m uvicorn fichajes_backpy.main:app --reload --port 8000"
     Start-Process powershell -ArgumentList @("-NoExit", "-ExecutionPolicy", "Bypass", "-Command", $command) | Out-Null
     Write-Step "Backend FastAPI iniciado"
 }
@@ -49,12 +49,12 @@ function Start-Backend {
 function Start-Frontend {
     param([string]$pythonExe)
 
-    $streamlitPath = Join-Path $PSScriptRoot "streamlit_app"
+    $streamlitPath = Join-Path $PSScriptRoot "src\streamlit_app"
     if (-not (Test-Path $streamlitPath)) {
-        throw "No se encontró directorio streamlit_app"
+        throw "No se encontró directorio src\streamlit_app"
     }
 
-    $command = "Set-Location -Path '$streamlitPath'; & '$pythonExe' -m streamlit run app.py"
+    $command = "Set-Location -Path '$PSScriptRoot'; & '$pythonExe' -m streamlit run src/streamlit_app/app.py"
     Start-Process powershell -ArgumentList @("-NoExit", "-ExecutionPolicy", "Bypass", "-Command", $command) | Out-Null
     Write-Step "Frontend Streamlit iniciado"
 }
@@ -87,13 +87,11 @@ function Install-Dependencies {
     param([string]$pythonExe)
 
     Write-Step "Instalando dependencias"
+    & $pythonExe -m pip install -e .
     & $pythonExe -m pip install --upgrade pip setuptools wheel
-    & $pythonExe -m pip install -r .\fichajes_backpy\requirements.txt
-    & $pythonExe -m pip install -r .\streamlit_app\requirements.txt
-    & $pythonExe -m pip install -r .\telegram_bot\requirements.txt
-    if (Test-Path ".\fichajes_frontpy\requirements.txt") {
-        & $pythonExe -m pip install -r .\fichajes_frontpy\requirements.txt
-    }
+    & $pythonExe -m pip install -r .\src\fichajes_backpy\requirements.txt
+    & $pythonExe -m pip install -r .\src\streamlit_app\requirements.txt
+    & $pythonExe -m pip install -r .\src\telegram_bot\requirements.txt
 }
 
 function Ensure-Admin {
@@ -101,6 +99,20 @@ function Ensure-Admin {
 
     Write-Step "Creando usuario administrador si no existe"
     & $pythonExe crear_admin.py --auto
+}
+
+function Start-TestEnv {
+    param([string]$pythonExe)
+
+    $scriptPath = Join-Path $PSScriptRoot "crear_entorno_prueba.py"
+    if (-not (Test-Path $scriptPath)) {
+        Write-Host "No se encontró crear_entorno_prueba.py" -ForegroundColor Yellow
+        return
+    }
+
+    Write-Step "Creando entorno de prueba (usuarios)..."
+    & $pythonExe $scriptPath
+    Write-Step "Entorno de prueba creado"
 }
 
 function Main {
@@ -116,6 +128,22 @@ function Main {
     }
 
     Write-Step "Python detectado: $pythonExe"
+
+    # Banner e información de entorno de prueba
+    Write-Host "";
+    Write-Host "PROYECTO BOT DE TELEGRAM POR : CARLOS, KIKE, VALENTINA Y ELENA" -ForegroundColor Green
+    Write-Host "Creando un entorno de prueba..." -ForegroundColor Cyan
+    Start-Sleep -Seconds 2
+    Write-Host "Credenciales de prueba:" -ForegroundColor Yellow
+    Write-Host "- Admin  / AdminPrueba1234!" -ForegroundColor Yellow
+    Write-Host "- Usuario / UsuarioPrueba1234!" -ForegroundColor Yellow
+    Write-Host ""
+    $createTest = Read-Host "¿Crear entorno de prueba y volcar usuarios de prueba a MongoDB? (S/n)"
+    if ($createTest -eq "S" -or $createTest -eq "s" -or $createTest -eq "") {
+        Start-TestEnv -pythonExe $pythonExe
+    } else {
+        Write-Step "Omitiendo creación de entorno de prueba"
+    }
 
     if (-not (Test-Path ".\.venv\Scripts\python.exe")) {
         Write-Host "No se encontro .venv en la raiz. Debes crear el entorno antes de arrancar." -ForegroundColor Red
