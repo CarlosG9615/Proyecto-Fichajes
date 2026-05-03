@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proyecto-fichajes"
+version = "0.1.0"
+description = "Sistema de fichajes con backend FastAPI, frontend Streamlit y bot de Telegram"
+requires-python = ">=3.11"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["fichajes_backpy*", "streamlit_app*", "telegram_bot*", "fichajes_common*"]
