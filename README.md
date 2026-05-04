@@ -30,7 +30,6 @@ proyectoFichajes/
 ├── pyproject.toml
 ├── crear_admin.py
 ├── crear_entorno_prueba.py
-├── pruebas_manuales/
 └── src/
 	├── fichajes_backpy/
 	├── streamlit_app/
@@ -44,10 +43,6 @@ El sistema depende de un archivo `.env` en la raíz y de una instancia de MongoD
 ## Flujo funcional
 
 El backend expone la API para autenticación, usuarios, fichajes y vínculos con Telegram. El portal Streamlit consume la base de datos para la interfaz de RRHH y el portal de empleados. El bot de Telegram permite registrar entradas y salidas desde mensajería, vinculando cada cuenta de Telegram con un usuario del sistema.
-
-## Utilidades manuales
-
-Los scripts de `pruebas_manuales/` quedan reservados para comprobaciones puntuales y no forman parte del flujo normal de arranque.
 
 ## Notas
 

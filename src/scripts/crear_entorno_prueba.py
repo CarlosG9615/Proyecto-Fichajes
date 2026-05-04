@@ -12,7 +12,8 @@ import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-ROOT_ENV_FILE = Path(__file__).resolve().parent / ".env"
+# Cargar .env desde la raíz del proyecto (2 niveles arriba desde src/scripts/)
+ROOT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(ROOT_ENV_FILE)
 
 from fichajes_backpy.app.core.security import hash_password

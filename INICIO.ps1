@@ -98,15 +98,15 @@ function Ensure-Admin {
     param([string]$pythonExe)
 
     Write-Step "Creando usuario administrador si no existe"
-    & $pythonExe crear_admin.py --auto
+    & $pythonExe src/scripts/crear_admin.py --auto
 }
 
 function Start-TestEnv {
     param([string]$pythonExe)
 
-    $scriptPath = Join-Path $PSScriptRoot "crear_entorno_prueba.py"
+    $scriptPath = Join-Path $PSScriptRoot "src/scripts/crear_entorno_prueba.py"
     if (-not (Test-Path $scriptPath)) {
-        Write-Host "No se encontró crear_entorno_prueba.py" -ForegroundColor Yellow
+        Write-Host "No se encontró src/scripts/crear_entorno_prueba.py" -ForegroundColor Yellow
         return
     }
 
