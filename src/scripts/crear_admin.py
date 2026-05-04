@@ -10,7 +10,8 @@ import argparse
 from pathlib import Path
 from dotenv import load_dotenv
 
-ROOT_ENV_FILE = Path(__file__).resolve().parent / ".env"
+# Cargar .env desde la raíz del proyecto (2 niveles arriba desde src/scripts/)
+ROOT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(ROOT_ENV_FILE)
 
 # Configuración
@@ -98,7 +99,7 @@ def crear_admin():
     
     # Verificar si el username ya existe
     if usuarios_col.find_one({"username": username}):
-        print(f"❌ El username '{username}' ya está en uso")
+        print(f"❌ El username '{username}' ya existe")
         return
     
     nombre_completo = input("Nombre completo: ").strip()
@@ -111,79 +112,46 @@ def crear_admin():
         print("❌ El email no puede estar vacío")
         return
     
-    # Verificar si el email ya existe
-    if usuarios_col.find_one({"email": email}):
-        print(f"❌ El email '{email}' ya está registrado")
+    departamento = input("Departamento: ").strip() or "RRHH"
+    
+    password = input("Contraseña: ").strip()
+    if not password or len(password) < 8:
+        print("❌ La contraseña debe tener al menos 8 caracteres")
         return
     
-    departamento = input("Departamento (RRHH): ").strip()
-    if not departamento:
-        departamento = "RRHH"
-    
-    password = input("Contraseña (mínimo 4 caracteres): ").strip()
-    if len(password) < 4:
-        print("❌ La contraseña debe tener al menos 4 caracteres")
-        return
-    
-    password_confirm = input("Confirmar contraseña: ").strip()
+    password_confirm = input("Confirma contraseña: ").strip()
     if password != password_confirm:
         print("❌ Las contraseñas no coinciden")
         return
     
     print()
     
-    # Crear el administrador
-    admin = {
-        "username": username,
-        "nombre_completo": nombre_completo,
-        "email": email,
-        "departamento": departamento,
-        "rol": "admin",
-        "password_hash": pwd_context.hash(password),
-        "activo": True,
-        "telegram_id": None,
-        "creado_en": datetime.now(),
-        "creado_por": "sistema"
-    }
-    
+    # Crear administrador
     try:
-        result = usuarios_col.insert_one(admin)
-        print("=" * 60)
-        print("✅ ADMINISTRADOR CREADO EXITOSAMENTE")
-        print("=" * 60)
-        print()
-        print(f"   Username: {username}")
-        print(f"   Nombre: {nombre_completo}")
-        print(f"   Email: {email}")
-        print(f"   Departamento: {departamento}")
-        print(f"   Rol: Administrador")
-        print()
-        print("🔐 Credenciales de acceso:")
-        print(f"   Usuario: {username}")
-        print(f"   Contraseña: {password}")
-        print()
-        print("🌐 Puedes acceder al Portal RRHH en:")
-        print("   http://localhost:8501")
-        print()
-        print("=" * 60)
+        admin = {
+            "username": username,
+            "nombre_completo": nombre_completo,
+            "email": email,
+            "departamento": departamento,
+            "rol": "admin",
+            "password_hash": pwd_context.hash(password),
+            "activo": True,
+            "telegram_id": None,
+            "creado_en": datetime.now(),
+            "creado_por": "sistema",
+        }
+        
+        usuarios_col.insert_one(admin)
+        print(f"✅ Administrador '{username}' creado exitosamente")
     except Exception as e:
         print(f"❌ Error al crear administrador: {e}")
-        return
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--auto", action="store_true", help="Crear admin sin interacción")
-    args = parser.parse_args()
-
-    if args.auto:
-        crear_admin_auto()
-        return
-
-    crear_admin()
-    print()
-    input("Presiona Enter para salir...")
-
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Crear administrador del sistema")
+    parser.add_argument("--auto", action="store_true", help="Crear admin automático sin interacción")
+    args = parser.parse_args()
+    
+    if args.auto:
+        crear_admin_auto()
+    else:
+        crear_admin()
